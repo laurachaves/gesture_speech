@@ -1,0 +1,12 @@
+name: gesture_speech
+channels:
+  - defaults
+dependencies:
+  - python=3.10
+  - opencv
+  - scipy
+  - pandas
+  - seaborn
+  - pip:
+    - mediapipe==0.10.9
+    - praat-parselmouth==0.4.7
