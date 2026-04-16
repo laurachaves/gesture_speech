@@ -8,5 +8,5 @@ dependencies:
   - pandas
   - seaborn
   - pip:
-    - mediapipe==0.10.9
+    - mediapipe==0.10.33
     - praat-parselmouth==0.4.7
