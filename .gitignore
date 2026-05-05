@@ -9,3 +9,4 @@
 *.xlsx
 .ipynb_checkpoints
 *.csv
+data/participants/*
