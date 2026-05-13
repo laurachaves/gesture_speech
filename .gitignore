@@ -8,5 +8,6 @@
 *.pdf
 *.xlsx
 .ipynb_checkpoints
+*.example
 *.csv
 data/participants/*
