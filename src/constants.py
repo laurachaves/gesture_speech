@@ -1,4 +1,6 @@
 import sys
+from datetime import date
+
 sys.path.append('../src')
 
 from tools import *
@@ -88,3 +90,9 @@ _options = vision.PoseLandmarkerOptions(
 )
 
 LANDMARKER = vision.PoseLandmarker.create_from_options(_options)
+
+# =============================================================================
+# Misc
+# =============================================================================
+DATA_PATH = "./../data/participants/"
+THIS_YEAR = date.today().year
