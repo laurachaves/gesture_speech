@@ -3,19 +3,21 @@ from datetime import date
 
 sys.path.append('../src')
 
-from tools import *
+from src.tools import *
 
 # =============================================================================
 # Paths
 # =============================================================================
 
-VIDEO_PATH   = '../data/meteo4.mp4'
-AUDIO_PATH   = '../data/meteoaudio.mp3'
-MODEL_PATH   = '../model/pose_landmarker_full.task'
-OUTPUT_DIR   = '../outputs'
-OUTPUT_CSV   = '../outputs/video_parts.csv'
-MOVEMENT_CSV = '../outputs/movement_all.csv'
-AUDIO_CSV    = '../outputs/audio_data.csv'
+VIDEO_PATH   = 'data/meteo4.mp4'
+AUDIO_PATH   = 'data/meteoaudio.mp3'
+MODEL_PATH   = 'model/pose_landmarker_full.task'
+OUTPUT_DIR   = 'outputs'
+OUTPUT_CSV   = 'outputs/video_parts.csv'
+MOVEMENT_CSV = 'outputs/movement_all.csv'
+AUDIO_CSV    = 'outputs/audio_data.csv'
+
+DATA_PATH = "data/participants/"
 
 # =============================================================================
 # Landmark tracking
@@ -94,5 +96,4 @@ LANDMARKER = vision.PoseLandmarker.create_from_options(_options)
 # =============================================================================
 # Misc
 # =============================================================================
-DATA_PATH = "./../data/participants/"
 THIS_YEAR = date.today().year

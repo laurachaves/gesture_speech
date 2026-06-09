@@ -2,8 +2,8 @@
 cd "$(dirname "$0")" || exit
 
 install_uv() {
-    echo "uv non trouvé"
-    echo "Tentative d'installation ..."
+    echo "uv not found"
+    echo "Trying to install ..."
     wget https://astral.sh/uv/install.sh && chmod +x ./install.sh && ./install.sh && rm install.sh && echo "uv installé !"
 }
 
@@ -12,15 +12,15 @@ setup_venv() {
 }
 
 sync() {
-    echo "Synchronisation des dépendances"
+    echo "Syncing dependencies"
     uv sync
-    echo "Activation du venv"
+    echo "venv activation"
     source .venv/bin/activate
 }
 
 launch() {
-    echo "Lancement en cours..."
-    uv run --with jupyter launcher.py
+    echo "Launching..."
+    uv run python main.py
 }
 
 nil=/dev/null

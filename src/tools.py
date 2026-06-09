@@ -175,7 +175,7 @@ def plot_velocity_acc(csv_path, landmarks, output_path, peak=False, fps=None, th
                 plt.title(f"Evolution of {metric} of {lm} throughout the video")
                 plt.legend()
                 plt.savefig(os.path.join(output_path, f"{metric}_{lm}.png"))
-                plt.show()
+
     else:
         for lm in landmarks:
             mov_col = header.index(f'movement_{lm}')
@@ -191,7 +191,7 @@ def plot_velocity_acc(csv_path, landmarks, output_path, peak=False, fps=None, th
             plt.ylabel(f"Velocity of {lm}")
             plt.title(f"Evolution of velocity of {lm} throughout the video")
             plt.savefig(os.path.join(output_path, f"velocity_{lm}.png"))
-            plt.show()
+
 
             plt.figure(figsize=(15, 8))
             plt.plot(frames, acceleration)
@@ -199,7 +199,7 @@ def plot_velocity_acc(csv_path, landmarks, output_path, peak=False, fps=None, th
             plt.ylabel("Acceleration")
             plt.title(f"Evolution of acceleration of {lm} throughout the video")
             plt.savefig(os.path.join(output_path, f"acceleration_{lm}.png"))
-            plt.show()
+
 
 
 def plot_pitch(audio_path, output_path, time_step=0.00333, pitch_floor=100.0, pitch_ceiling=500.0,
@@ -236,7 +236,7 @@ def plot_pitch(audio_path, output_path, time_step=0.00333, pitch_floor=100.0, pi
         plt.title(f"Evolution of pitch throughout the audio: {audio_path.split('/')[-1]}")
         plt.legend()
         plt.savefig(os.path.join(output_path, "f0.png"))
-        plt.show()
+
     else:
         plt.figure()
         plt.plot(time_pitch, f0_plot)
@@ -244,7 +244,7 @@ def plot_pitch(audio_path, output_path, time_step=0.00333, pitch_floor=100.0, pi
         plt.ylabel("Frequency (Hz)")
         plt.title(f"Evolution of pitch throughout the audio: {audio_path.split('/')[-1]}")
         plt.savefig(os.path.join(output_path, "f0.png"))
-        plt.show()
+
 
 
 def nearest_event(t, events):
@@ -319,7 +319,7 @@ def histo(csv_path, landmarks, f0_path, fps, output_path, threshold_percentile=7
                 ax.legend()
                 plt.tight_layout()
                 plt.savefig(os.path.join(output_path, f"histogram_acceleration_{lm_name}.png"))
-                plt.show()
+
                 all_acceleration.append(np.array(movement_all[f'acceleration_{lm_name}']))
             mean_acceleration = np.mean(all_acceleration, axis=0)
             acc_threshold = np.percentile(mean_acceleration, 75)
@@ -339,7 +339,7 @@ def histo(csv_path, landmarks, f0_path, fps, output_path, threshold_percentile=7
             ax.legend()
             plt.tight_layout()
             plt.savefig(os.path.join(output_path, "histogram_acceleration_average.png"))
-            plt.show()
+
 
         if metric == 'velocity':
             all_velocity = []
@@ -363,7 +363,7 @@ def histo(csv_path, landmarks, f0_path, fps, output_path, threshold_percentile=7
                 ax.legend()
                 plt.tight_layout()
                 plt.savefig(os.path.join(output_path, f"histogram_velocity_{lm_name}.png"))
-                plt.show()
+
                 all_velocity.append(np.array(movement_all[f'movement_{lm_name}']))
             mean_velocity = np.mean(all_velocity, axis=0)
             vel_threshold = np.percentile(mean_velocity, 75)
@@ -383,7 +383,7 @@ def histo(csv_path, landmarks, f0_path, fps, output_path, threshold_percentile=7
             ax.legend()
             plt.tight_layout()
             plt.savefig(os.path.join(output_path, "histogram_velocity_average.png"))
-            plt.show()
+
 
 
 def plot_with_peaks(csv_path=None, landmarks=None, audio_path=None,
@@ -439,7 +439,7 @@ def plot_with_peaks(csv_path=None, landmarks=None, audio_path=None,
                 plt.ylabel(ylabel)
                 plt.title(f"Evolution of {metric} of {lm} throughout the video")
                 plt.legend()
-                plt.show()
+
 
     if audio_path is not None:
         snd = parselmouth.Sound(audio_path)
@@ -460,7 +460,7 @@ def plot_with_peaks(csv_path=None, landmarks=None, audio_path=None,
         plt.ylabel("Frequency (Hz)")
         plt.title(f"Evolution of pitch throughout the audio: {audio_path.split('/')[-1]}")
         plt.legend()
-        plt.show()
+
 
 def smoothed_curves(csv_path, landmarks, f0_path, fps, output_path, threshold_percentile=75, peak_distance=5):
     """
@@ -500,7 +500,7 @@ def smoothed_curves(csv_path, landmarks, f0_path, fps, output_path, threshold_pe
         pitch_threshold = np.percentile(f0[f0 > 0], 75)
         peaks_pitch, _ = find_peaks(f0,height=pitch_threshold,distance=5)
         peak_pitch_times = time_pitch.values[peaks_pitch]
-            
+
         D_acc = []
         D_vel = []
         for t_acc in peak_acc_times:
@@ -521,7 +521,7 @@ def smoothed_curves(csv_path, landmarks, f0_path, fps, output_path, threshold_pe
         ax.legend()
         plt.tight_layout()
         plt.savefig(os.path.join(output_path, f"smoothed_curves_{lm_name}.png"))
-        plt.show()
+
 
 
 def smooth(x, window_len=11, window='hanning'):
