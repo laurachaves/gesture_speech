@@ -45,7 +45,6 @@ class Application(tk.Frame):
     def _init_state(self):
         self.PARTICIPANT_NAME: str = ""
         self.DATA_PATH_PARTICIPANT: str = ""
-        self.PARTICIPANT_AGE: int = -1
         self.VIDEO_YEAR: int = -1
         self.VIDEO_YEAR_ID: int = 1
         self.DATA_PATH_ID: str = ""
@@ -81,7 +80,6 @@ class Application(tk.Frame):
 
         self.video_time_label: tk.Label = tk.Label()
         self.participant_name_label: tk.Label = tk.Label()
-        self.participant_age_label: tk.Label = tk.Label()
         self.video_year_label: tk.Label = tk.Label()
         self.popup_status_label: tk.Label = tk.Label()
 
@@ -95,7 +93,6 @@ class Application(tk.Frame):
         self.f0_frequency_entry: tk.Entry = tk.Entry()
         self.peak_percentage_entry: tk.Entry = tk.Entry()
         self.peak_distance_entry: tk.Entry = tk.Entry()
-        self.age_entry: tk.Entry = tk.Entry()
         self.video_path_entry: tk.Entry = tk.Entry()
         self.video_year_entry: tk.Entry = tk.Entry()
 
@@ -135,6 +132,27 @@ class Application(tk.Frame):
         x: int = self.master.winfo_rootx() + (self.master.winfo_width() // 2) - (self.popup.winfo_width() // 2)
         y: int = self.master.winfo_rooty() + (self.master.winfo_height() // 2) - (self.popup.winfo_height() // 2)
         self.popup.geometry(f"+{x}+{y}")
+
+    def call_load_participant_popup(self):
+        if os.listdir(DATA_PATH):
+            self.build_load_participant_popup()
+        else:
+            #TODO toast
+            self.popup = tk.Toplevel(self.master)
+            self.popup.lift()
+            self.popup.attributes("-topmost", True)
+            self.popup.attributes("-topmost", False)
+
+            tk.Label(
+                self.popup,
+                text="No participant found. Please create a participant first.",
+                justify="left",
+                padx=5,
+                pady=5
+            ).pack()
+
+            self.after(2000, self.popup.destroy)
+
 
     def update_startup_info(self):
         self.settings["stop_displaying_help_at_beginning"] = self.boolvar.get()
@@ -197,7 +215,7 @@ class Application(tk.Frame):
                 self.set_cursor_coords(image=image_resized, canva=canva)
 
                 progress: int = self.vlc_player.get_time() / self.VIDEO_LENGTH
-                self.body_part_canva.create_line(
+                canva.create_line(
                     self.offset + progress * self.curves_length, self.y_top,
                     self.offset + progress * self.curves_length, self.y_bottom,
                     fill="red",
@@ -250,11 +268,11 @@ class Application(tk.Frame):
 
     def reload_images(self):
         self.draw_image(os.path.join(self.DATA_PATH_ID, self.IMAGE_NAME[0]), self.body_part_canva_frame,
-                        self.body_part_canva, True)
+                        self.body_part_canva, False) # TODO put back True after the # TEST
         self.draw_image(os.path.join(self.DATA_PATH_ID, self.IMAGE_NAME[1]), self.histogram_canvas_frame,
                         self.histogram_canvas)
         self.draw_image(os.path.join(self.DATA_PATH_ID, self.IMAGE_NAME[2]), self.f0_canva_frame,
-                        self.f0_canva, True)  # TODO add True in the arguments when the right image will be used
+                        self.f0_canva, True)  # TODO set True in the arguments when the right image will be used
 
     def search_curves_border(self, orientation: str, image: Image.Image, width: int, height: int):
         hypothetical_lines: list[int] = []
@@ -289,6 +307,19 @@ class Application(tk.Frame):
 
         return [hypothetical_lines[0], hypothetical_lines[-1]]
 
+    def reset_images(self):
+        self.body_part_canva.delete("all")
+        self.f0_canva.delete("all")
+        self.histogram_canvas.delete("all")
+        self.acceleration_radiobutton.config(
+            state="disabled",
+        )
+        self.velocity_radiobutton.config(
+            state="disabled",
+        )
+        self.set_f0_entry(reset=True)
+        self.set_parameters_to_default()
+
     # endregion IMAGES
 
     def wait_for_video_fps(self, attempt: int = 0):
@@ -318,19 +349,6 @@ class Application(tk.Frame):
         self.build_video_player(self.video_frame)
         self.build_video_controls(self.video_frame)
         self.reset_images()
-
-    def reset_images(self):
-        self.body_part_canva.delete("all")
-        self.f0_canva.delete("all")
-        self.histogram_canvas.delete("all")
-        self.acceleration_radiobutton.config(
-            state="disabled",
-        )
-        self.velocity_radiobutton.config(
-            state="disabled",
-        )
-        self.set_f0_entry(reset=True)
-        self.set_parameters_to_default()
 
     # endregion SYSTEM
 
@@ -535,6 +553,7 @@ class Application(tk.Frame):
         dx = new_x - self.cursor_x
         self.body_part_canva.move("cursor", dx, 0)
 
+
         self.cursor_x = new_x
 
     def go_one_frame_back(self):
@@ -684,7 +703,7 @@ class Application(tk.Frame):
             )
             self.popup.update_idletasks()
 
-            self.create_participant_tree(self.name_drop_down_list.get(), self.age_entry.get(),
+            self.create_participant_tree(self.name_drop_down_list.get(),
                                          self.video_path_entry.get(), int(self.video_year_entry.get()))
             self.popup.destroy()
         else:
@@ -708,7 +727,7 @@ class Application(tk.Frame):
                 anchor="center",
             )
 
-    def create_participant_tree(self, name: str = "name", age: int | str = 8, video_path: str = "data/meteo4.mp4",
+    def create_participant_tree(self, name: str = "name", video_path: str = "data/meteo4.mp4",
                                 video_year: int = 2026):
         """
         Initialise the data for a new participant:
@@ -720,7 +739,6 @@ class Application(tk.Frame):
         print("  -CREATE PARTICIPANT TREE-")
         print("values:")
         print("name :", name)
-        print("age :", age)
         print("video_path :", video_path)
         print("video_year :", video_year)
 
@@ -855,7 +873,6 @@ class Application(tk.Frame):
         labels_width = 10
 
         self.build_popup_new_participant_name_entry(self.popup, labels_width)
-        self.build_popup_new_participant_age_entry(self.popup, labels_width)
         self.build_popup_new_participant_video_selector(self.popup, labels_width)
         self.build_popup_new_participant_video_year_entry(self.popup, labels_width)
 
@@ -884,43 +901,6 @@ class Application(tk.Frame):
             values=sorted(os.listdir("data/participants/"))
         )
         self.name_drop_down_list.pack(
-            side="left",
-            padx=5,
-            pady=5
-        )
-
-    def build_popup_new_participant_age_entry(self, parent: tk.Frame | tk.Toplevel, width: int):
-        frame = tk.Frame(
-            parent
-        )
-        # frame.pack(
-        #     side="top",
-        #     fill="x"
-        # )
-        tk.Label(
-            frame,
-            text="Age :",
-            anchor="e",
-            width=width
-        ).pack(
-            side="left",
-            padx=5,
-            pady=5
-        )
-
-        self.age_entry = tk.Entry(
-            frame,
-            background="white",
-            width=3,
-            validate="key",
-            validatecommand=(
-                self.register(
-                    lambda value: (value.isdigit() or value == "") and len(value) <= 2
-                ),
-                "%P"
-            )
-        )
-        self.age_entry.pack(
             side="left",
             padx=5,
             pady=5
@@ -1262,15 +1242,15 @@ class Application(tk.Frame):
         # region MENU FILE
         menu_file = tk.Menu(
             toolbar,
-            tearoff=0
+            tearoff=0,
         )
         menu_file.add_command(
             label="New Participant",
             command=self.build_popup_new_participant
         )
         menu_file.add_command(
-            label="Open Participant",
-            command=self.build_load_participant_popup
+            label="Load Participant",
+            command=self.call_load_participant_popup
         )
         menu_file.add_separator()
         menu_file.add_command(
@@ -1396,7 +1376,7 @@ class Application(tk.Frame):
             expand=True
         )
 
-    # endregion VIDEO
+    # endregion BUILDING VIDEO
 
     # region BUILDING SIGNAL CURVES
     def build_signal_curves_panel(self, parent: tk.Frame):
@@ -1517,7 +1497,6 @@ class Application(tk.Frame):
         frame.pack_propagate(False)
 
         self.build_participant_name_info(frame)
-        # self.build_participant_age_info(frame)
         self.build_video_year_info(frame)
         self.build_f0_frequency_info(frame)
 
@@ -1607,39 +1586,6 @@ class Application(tk.Frame):
             )
         else:
             self.participant_name_label.config(
-                text=" - "
-            )
-
-    def build_participant_age_info(self, parent: tk.Frame):
-        frame = tk.Frame(
-            parent
-        )
-        frame.pack(
-            side="top",
-            fill="x"
-        )
-
-        tk.Label(
-            frame,
-            text="Participant age : ",
-            width=self.label_width,
-            anchor="e"
-        ).pack(
-            side="left"
-        )
-
-        self.participant_age_label = tk.Label(
-            frame
-        )
-        self.participant_age_label.pack(
-            side="left"
-        )
-        if self.PARTICIPANT_AGE:
-            self.participant_age_label.config(
-                text=self.PARTICIPANT_AGE
-            )
-        else:
-            self.participant_age_label.config(
                 text=" - "
             )
 
