@@ -11,4 +11,4 @@
 *.example
 *.csv
 data/participants/*
-*.png
+data/settings.json
