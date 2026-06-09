@@ -11,3 +11,4 @@
 *.example
 *.csv
 data/participants/*
+*.png

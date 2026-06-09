@@ -462,6 +462,67 @@ def plot_with_peaks(csv_path=None, landmarks=None, audio_path=None,
         plt.legend()
         plt.show()
 
+def smoothed_curves(csv_path, landmarks, f0_path, fps, output_path, threshold_percentile=75, peak_distance=5):
+    """
+    The code takes a csv file with the acceleration and velocity of the landmarks tracked and the csv file with the information on the audio
+    and plots the histograms relating the peak pitch with peak velocity and peak acceleration.
+
+    Args:
+        csv_path: The path for the csv file, including the csv (e.g. "../outputs/meteo4_movement_all.csv")
+        landmarks: list with each landmark to be tracked
+        f0_path: Path for the CSV file with the information on the audio, (e.g. "../outputs/audio_data.csv")
+        fps: The fps of the original video
+        output_path: directory where the plots will be saved
+        threshold_percentile: The threshold for acceleration and velocity metrics
+        peak_distance: Value establishing what the distance between peaks should be, defaults to 5
+    """
+    audio_data = pd.read_csv(f0_path)
+    f0 = audio_data['f0']
+    time_pitch = audio_data['time_pitch']
+    movement_all = pd.read_csv(csv_path)
+    dt = 1 / fps
+    time = np.array([i * dt for i in range(len(movement_all))])
+    pitch_threshold = np.percentile(f0[f0 > 0], threshold_percentile)
+    peaks_pitch, _ = find_peaks(f0, height=pitch_threshold, distance=peak_distance)
+    for lm_name in landmarks:
+        velocity_lm = movement_all[f'movement_{lm_name}']
+        acceleration_lm = movement_all[f'acceleration_{lm_name}']
+        time = np.array([i * dt for i in range(len(movement_all))])
+        acceleration = np.array(acceleration_lm)
+        velocity = np.array(velocity_lm)
+        time = np.array(time)
+        acc_threshold = np.percentile(acceleration,75)
+        vel_threshold = np.percentile(velocity,75)
+        peaks_acc, _ = find_peaks(acceleration, height=acc_threshold, distance=5)
+        peak_acc_times = time[peaks_acc]
+        peaks_vel, _ = find_peaks(velocity, height=vel_threshold, distance=5)
+        peak_vel_times = time[peaks_vel]
+        pitch_threshold = np.percentile(f0[f0 > 0], 75)
+        peaks_pitch, _ = find_peaks(f0,height=pitch_threshold,distance=5)
+        peak_pitch_times = time_pitch.values[peaks_pitch]
+            
+        D_acc = []
+        D_vel = []
+        for t_acc in peak_acc_times:
+            t_pitch = nearest_event(t_acc, peak_pitch_times)
+            D_acc.append(t_acc - t_pitch)
+        D_acc = np.array(D_acc) * 1000
+        for t_vel in peak_vel_times:
+            t_pitch = nearest_event(t_vel, peak_pitch_times)
+            D_vel.append(t_vel - t_pitch)
+        D_vel = np.array(D_vel) * 1000
+        fig, ax = plt.subplots(figsize=(8,4))
+        sns.kdeplot(D_vel, ax=ax, color = 'orange', label=f"peak velocity ({lm_name})")
+        sns.kdeplot(D_acc, ax=ax, color = 'green', label=f"peak acceleration ({lm_name})")
+        ax.axvline(0, linestyle="--", color="blue", label="peak pitch")
+        ax.set_xlabel("D (time in ms)")
+        ax.set_ylabel("density")
+        ax.set_title(f"Velocity & Acceleration vs Pitch: {lm_name}")
+        ax.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_path, f"smoothed_curves_{lm_name}.png"))
+        plt.show()
+
 
 def smooth(x, window_len=11, window='hanning'):
     """
