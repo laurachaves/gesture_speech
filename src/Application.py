@@ -20,6 +20,8 @@ class Application(tk.Frame):
     # region INITIALIZATION
     def __init__(self, master: tk.Tk):
         super().__init__(master)
+        if not os.path.isdir("./../data/participants/"):
+            os.mkdir("./../data/participants")
         self.master = master
         self.pack(fill="both", expand=True)
 
