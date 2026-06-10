@@ -693,8 +693,8 @@ class Application(tk.Frame):
         if self.name_entry.get() and (
                 self.video_path_entry.get() and os.path.exists(self.video_path_entry.get())) and (
                 self.video_year_entry.get() and len(self.video_year_entry.get()) == 4):
-            self.master.config(cursor="wait")
-            self.popup.config(cursor="wait")
+            self.master.config(cursor="watch")
+            self.popup.config(cursor="watch")
             self.master.update_idletasks()
             self.popup_status_label.config(
                 relief="groove",
