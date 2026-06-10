@@ -12,3 +12,4 @@
 *.csv
 data/participants/*
 data/settings.json
+*.png

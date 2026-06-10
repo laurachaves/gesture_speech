@@ -193,7 +193,7 @@ def plot_velocity_acc(csv_path, landmarks, output_path, peak=False, fps=None, th
             plt.savefig(os.path.join(output_path, f"velocity_{lm}.png"))
 
 
-            plt.figure(figsize=(15, 8))
+            plt.figure()
             plt.plot(frames, acceleration)
             plt.xlabel("Frame")
             plt.ylabel("Acceleration")
@@ -238,7 +238,7 @@ def plot_pitch(audio_path, output_path, time_step=0.00333, pitch_floor=100.0, pi
         plt.savefig(os.path.join(output_path, "f0.png"))
 
     else:
-        plt.figure(figsize=(15, 8))
+        plt.figure()
         plt.plot(time_pitch, f0_plot)
         plt.xlabel("Time (s)")
         plt.ylabel("Frequency (Hz)")
@@ -330,7 +330,7 @@ def histo(csv_path, landmarks, f0_path, fps, output_path, threshold_percentile=7
                 t_pitch = peak_pitch_times[np.argmin(np.abs(peak_pitch_times - t_acc))]
                 D_acc.append(t_acc - t_pitch)
             D_acc = np.array(D_acc) * 1000
-            fig, ax = plt.subplots(figsize=(15, 8))
+            fig, ax = plt.subplots()
             sns.histplot(D_acc, bins=10)
             ax.axvline(0, linestyle='--', color='blue', label='peak pitch')
             ax.set_xlabel('D (ms)')
@@ -354,7 +354,7 @@ def histo(csv_path, landmarks, f0_path, fps, output_path, threshold_percentile=7
                     t_pitch = peak_pitch_times[np.argmin(np.abs(peak_pitch_times - t_vel))]
                     D_vel.append(t_vel - t_pitch)
                 D_vel = np.array(D_vel) * 1000
-                fig, ax = plt.subplots(figsize=(15, 8))
+                fig, ax = plt.subplots()
                 sns.histplot(D_vel, bins=10)
                 ax.axvline(0, linestyle='--', color='blue', label='peak pitch')
                 ax.set_xlabel('D (ms)')
