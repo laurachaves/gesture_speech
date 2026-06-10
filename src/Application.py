@@ -3,16 +3,16 @@ import os
 import shutil
 import tkinter as tk
 import webbrowser
+from datetime import datetime
 from tkinter import ttk, filedialog
 
 import vlc
 from PIL import Image, ImageTk, ImageOps
 
-from src.constants import TRACKS, DATA_PATH, LANDMARKER, KEYPOINTS
+from src.constants import TRACKS, DATA_PATH, LANDMARKER, KEYPOINTS, BACKGROUND
 from src.tools import histo, plot_velocity_acc, movement_extraction, f0_extract, plot_pitch
 from src.utils import millisecond_to_minute_second, split_id
 
-BACKGROUND = "darkgray"
 
 
 class Application(tk.Frame):
@@ -24,7 +24,6 @@ class Application(tk.Frame):
         self.pack(fill="both", expand=True)
 
         self._init_state()
-        self._init_widgets()
         self._init_video_backend()
         self._init_layout_values()
 
@@ -42,12 +41,17 @@ class Application(tk.Frame):
             # noinspection PyTypeChecker
             self.after(500, self.build_popup_info)
 
-    def _init_state(self):
-        self.PARTICIPANT_NAME: str = ""
-        self.DATA_PATH_PARTICIPANT: str = ""
-        self.VIDEO_YEAR: int = -1
+    def _init_state(self): #HERE
+        self.PARTICIPANT_NAME: tk.StringVar = tk.StringVar(value="--Name--")
+        self.PARTICIPANT_ID: tk.StringVar = tk.StringVar(value="--ID--")
+        self.BODY_PART: tk.StringVar = tk.StringVar(value="--Body Part--")
+
+        self.VIDEO_YEAR: int = datetime.now().year
         self.VIDEO_YEAR_ID: int = 1
-        self.DATA_PATH_ID: str = ""
+
+        self.DATA_PATH_PARTICIPANT: str = DATA_PATH
+        self.DATA_PATH_ID: str = DATA_PATH
+
         self.MILLISECONDS_BETWEEN_FRAMES: int = 60
         self.IMAGE_NAME: list[str] = ["", "", "f0.png"]
 
@@ -56,50 +60,19 @@ class Application(tk.Frame):
 
         self.VIDEO_LENGTH: int = -1
         self.IS_VIDEO_PLAYING: bool = False
-        self.fps: int = None
+        self.fps: int|None = None
 
         self.offset: int = 0
         self.curves_length: int = 0
         self.cursor_x: int = 0
 
         self.boolvar: tk.BooleanVar = tk.BooleanVar(value=self.settings["stop_displaying_help_at_beginning"])
-        self.choice: tk.StringVar = tk.StringVar(value="acceleration")
+        self.rodiobutton_choice: tk.StringVar = tk.StringVar(value="acceleration")
 
         self.old_peak_percentage: int
         self.old_peak_distance: int
 
         self.resize_after_id = None
-
-    def _init_widgets(self):
-        self.popup: tk.Toplevel
-
-        self.video_frame: tk.Frame = tk.Frame()
-        self.video_player_frame: tk.Frame = tk.Frame()
-        self.graphs_frame: tk.Frame = tk.Frame()
-        self.body_part_canva_frame: tk.Frame = tk.Frame()
-
-        self.video_time_label: tk.Label = tk.Label()
-        self.participant_name_label: tk.Label = tk.Label()
-        self.video_year_label: tk.Label = tk.Label()
-        self.popup_status_label: tk.Label = tk.Label()
-
-        self.body_part_canva: tk.Canvas = tk.Canvas()
-        self.f0_canva: tk.Canvas = tk.Canvas()
-        self.histogram_canvas: tk.Canvas = tk.Canvas()
-
-        self.play_pause_button: tk.Button = tk.Button()
-        self.stop_showing_info_popup_checkbutton: tk.Checkbutton = tk.Checkbutton()
-
-        self.f0_frequency_entry: tk.Entry = tk.Entry()
-        self.peak_percentage_entry: tk.Entry = tk.Entry()
-        self.peak_distance_entry: tk.Entry = tk.Entry()
-        self.video_path_entry: tk.Entry = tk.Entry()
-        self.video_year_entry: tk.Entry = tk.Entry()
-
-        self.video_time_scale: tk.Scale = tk.Scale()
-
-        self.name_drop_down_list: ttk.Combobox = ttk.Combobox()
-        self.body_part_drop_down_list: ttk.Combobox = ttk.Combobox()
 
     def _init_video_backend(self):
         self.vlc_player = None
@@ -192,6 +165,8 @@ class Application(tk.Frame):
         :param canva: Canva where the image will be displayed
         :param draw_line: Ask if a line synced with the video player should be drawn
         """
+        print("image_path :", image_path)
+
         frame.update_idletasks()
         canva.delete("all")
         if os.path.isfile(image_path):
@@ -350,6 +325,15 @@ class Application(tk.Frame):
         self.build_video_controls(self.video_frame)
         self.reset_images()
 
+        for widget in (
+                self.body_part_drop_down_list,
+                self.acceleration_radiobutton,
+                self.velocity_radiobutton
+        ):
+            widget.config(
+                state="disabled"
+            )
+
     # endregion SYSTEM
 
     # region SETTERS
@@ -428,8 +412,8 @@ class Application(tk.Frame):
         )
 
     def set_image_name(self):
-        self.IMAGE_NAME[0] = f"{self.choice.get()}_{self.body_part_drop_down_list.get()}.png"
-        self.IMAGE_NAME[1] = f"histogram_{self.choice.get()}_{self.body_part_drop_down_list.get()}.png"
+        self.IMAGE_NAME[0] = f"{self.rodiobutton_choice.get()}_{self.BODY_PART.get()}.png"
+        self.IMAGE_NAME[1] = f"histogram_{self.rodiobutton_choice.get()}_{self.BODY_PART.get()}.png"
 
     def set_cursor_coords(self, image, canva):
         image = image.convert("RGB")
@@ -552,7 +536,7 @@ class Application(tk.Frame):
 
         dx = new_x - self.cursor_x
         self.body_part_canva.move("cursor", dx, 0)
-
+        self.f0_canva.move("cursor", dx, 0)
 
         self.cursor_x = new_x
 
@@ -569,19 +553,19 @@ class Application(tk.Frame):
     # region COMMAND CALLBACKS
     def load_participant_confirm(self):
         self.set_parameters_to_default()
-        self.set_infos_labels(self.PARTICIPANT_NAME, str(self.VIDEO_YEAR))
+        self.set_infos_labels(self.PARTICIPANT_NAME.get(), str(self.VIDEO_YEAR))
 
         self.load_video()
 
         self.body_part_drop_down_list.config(
-            state="readonly",
+            state="normal",
         )
 
         self.popup.destroy()
         self.master.focus_set()
 
     def load_participant_cancel(self, old_values: list):
-        self.PARTICIPANT_NAME = old_values[0]
+        self.PARTICIPANT_NAME.set(old_values[0])
         self.DATA_PATH_PARTICIPANT = old_values[1]
         self.VIDEO_YEAR = old_values[2]
         self.VIDEO_YEAR_ID = old_values[3]
@@ -614,14 +598,50 @@ class Application(tk.Frame):
     # endregion COMMAND CALLBACKS
 
     # region BIND FUNCTIONS CALLBACKS
-    def body_part_drop_down_list_bind_function(self, event: tk.Event):
-        for widget in (
-                self.acceleration_radiobutton,
-                self.velocity_radiobutton
-        ):
-            widget.config(
-                state="normal"
-            )
+    def participants_drop_down_list_bind_function(self, participant_name, next_ddl: tk.OptionMenu):
+        self.load_participant_name_context()
+
+        values = sorted(
+            [
+                name for name in os.listdir(self.DATA_PATH_PARTICIPANT)
+                if os.path.isdir(os.path.join(self.DATA_PATH_PARTICIPANT, name))
+            ],
+            key=split_id
+        )
+
+        next_ddl.destroy()
+
+        next_ddl = tk.OptionMenu(
+            self.ddls_frame,
+            self.PARTICIPANT_ID,
+            *values,
+            command=self.id_drop_down_list_bind_function
+        )
+        next_ddl.config(
+            width=20,
+        )
+        next_ddl.pack(
+            side="top",
+            padx=5,
+            pady=5,
+        )
+
+    def id_drop_down_list_bind_function(self, participant_id):
+        self.VIDEO_YEAR, self.VIDEO_YEAR_ID = split_id(participant_id)
+
+        self.load_participant_id_context()
+
+        self.load_participant_button.config(state="normal")
+
+    def body_part_drop_down_list_bind_function(self, body_part):
+        if self.acceleration_radiobutton["state"] == "disabled" or self.velocity_radiobutton["state"] == "disabled":
+            for widget in (
+                    self.acceleration_radiobutton,
+                    self.velocity_radiobutton
+            ):
+                widget.config(
+                    state="normal"
+                )
 
         self.set_image_name()
         self.reload_images()
@@ -654,25 +674,6 @@ class Application(tk.Frame):
         if pos_x > self.curves_length:
             self.video_time_scale.set(self.VIDEO_LENGTH)
 
-    def load_participant_button_bind_function(self, event: tk.Event, next_ddl: ttk.Combobox):
-        self.PARTICIPANT_NAME = event.widget.get()
-        self.DATA_PATH_PARTICIPANT = DATA_PATH + self.PARTICIPANT_NAME + "/"
-
-        next_ddl.config(
-            state="readonly",
-            values=sorted(
-                [file for file in os.listdir(self.DATA_PATH_PARTICIPANT)
-                 if os.path.isdir(os.path.join(self.DATA_PATH_PARTICIPANT, str(file)))],
-                key=split_id
-            ),
-        )
-
-    def load_id_button_bind_function(self, event: tk.Event):
-        get = event.widget.get()
-        self.DATA_PATH_ID = os.path.join(self.DATA_PATH_PARTICIPANT, get)
-        self.VIDEO_YEAR_ID = int(get.split("-")[1])
-        self.VIDEO_YEAR = int(get.split("-")[0])
-
     # endregion BIND FUNCTIONS CALLBACKS
     # endregion CALLBACKS
 
@@ -682,7 +683,7 @@ class Application(tk.Frame):
         """
         Gets the values from the form to create the new participant's structure and set values with them
         """
-        if self.name_drop_down_list.get() and (
+        if self.name_entry.get() and (
                 self.video_path_entry.get() and os.path.exists(self.video_path_entry.get())) and (
                 self.video_year_entry.get() and len(self.video_year_entry.get()) == 4):
             self.popup_status_label.config(
@@ -703,7 +704,7 @@ class Application(tk.Frame):
             )
             self.popup.update_idletasks()
 
-            self.create_participant_tree(self.name_drop_down_list.get(),
+            self.create_participant_tree(self.name_entry.get(),
                                          self.video_path_entry.get(), int(self.video_year_entry.get()))
             self.popup.destroy()
         else:
@@ -727,8 +728,7 @@ class Application(tk.Frame):
                 anchor="center",
             )
 
-    def create_participant_tree(self, name: str = "name", video_path: str = "data/meteo4.mp4",
-                                video_year: int = 2026):
+    def create_participant_tree(self, name: str = "name", video_path: str = "data/meteo4.mp4", video_year: int = 2026): #TODO remake that function according to the new popup
         """
         Initialise the data for a new participant:
         - Create the participant's folders
@@ -742,8 +742,8 @@ class Application(tk.Frame):
         print("video_path :", video_path)
         print("video_year :", video_year)
 
-        self.PARTICIPANT_NAME = name
-        self.DATA_PATH_PARTICIPANT = DATA_PATH + self.PARTICIPANT_NAME + "/"
+        self.PARTICIPANT_NAME.set(name)
+        self.DATA_PATH_PARTICIPANT = DATA_PATH + self.PARTICIPANT_NAME.get() + "/"
         if not os.path.exists(self.DATA_PATH_PARTICIPANT):
             os.mkdir(self.DATA_PATH_PARTICIPANT)
         self.load_participant_name_context()
@@ -797,31 +797,24 @@ class Application(tk.Frame):
 
     def load_participant_name_context(self):
         self.reset()
-        self.DATA_PATH_PARTICIPANT = DATA_PATH + self.PARTICIPANT_NAME + "/"
-        self.set_infos_labels(name=self.PARTICIPANT_NAME)
 
-        for widget in (
-                self.body_part_drop_down_list,
-                self.acceleration_radiobutton,
-                self.velocity_radiobutton
-        ):
-            widget.config(
-                state="disabled"
-            )
+        self.DATA_PATH_PARTICIPANT = DATA_PATH + self.PARTICIPANT_NAME.get() + "/"
+        self.set_infos_labels(name=self.PARTICIPANT_NAME.get())
+
+
         self.video_year_label.config(
             text=" - "
         )
 
     def load_participant_id_context(self):
         self.reset_images()
-        self.DATA_PATH_ID = self.DATA_PATH_PARTICIPANT + str(self.VIDEO_YEAR) + "-" + str(self.VIDEO_YEAR_ID) + "/"
-        self.set_infos_labels(name=self.PARTICIPANT_NAME,
-                              video_year=str(self.VIDEO_YEAR) + "-" + str(self.VIDEO_YEAR_ID))
+        self.DATA_PATH_ID = self.DATA_PATH_PARTICIPANT + self.PARTICIPANT_ID.get() + "/"
+        self.set_infos_labels(name=self.PARTICIPANT_NAME.get(), video_year=str(self.VIDEO_YEAR))
 
         self.body_part_drop_down_list.config(
-            state="readonly"
+            state="normal"
         )
-        self.body_part_drop_down_list.set(" --body parts--")
+        self.BODY_PART.set(" --body parts--")
 
     def load_video(self):
         """
@@ -896,11 +889,12 @@ class Application(tk.Frame):
             padx=5,
             pady=5
         )
-        self.name_drop_down_list = ttk.Combobox(
+        self.name_entry = tk.Entry(
             frame,
-            values=sorted(os.listdir("data/participants/"))
+            bg="white",
+            width=20
         )
-        self.name_drop_down_list.pack(
+        self.name_entry.pack(
             side="left",
             padx=5,
             pady=5
@@ -1119,7 +1113,7 @@ class Application(tk.Frame):
         self.popup.attributes("-topmost", True)
         self.popup.attributes("-topmost", False)
 
-        old_participant_name = self.PARTICIPANT_NAME
+        old_participant_name = self.PARTICIPANT_NAME.get()
         old_data_path_participant = self.DATA_PATH_PARTICIPANT
         old_video_year = self.VIDEO_YEAR
         old_video_year_id = self.VIDEO_YEAR_ID
@@ -1133,18 +1127,21 @@ class Application(tk.Frame):
             old_data_path_id
         ]
 
+        self.ddls_frame = tk.Frame(
+            self.popup
+        )
+        self.ddls_frame.pack()
         # region PARTICIPANT
         participants = sorted(os.listdir("data/participants/"))
-        participants_drop_down_list = ttk.Combobox(
-            self.popup,
-            state="readonly",
-            values=participants,
-            width=20,
+        participants_drop_down_list = tk.OptionMenu( #HERE
+            self.ddls_frame,
+            self.PARTICIPANT_NAME,
+            *participants,
+            command=lambda participant_name: self.participants_drop_down_list_bind_function(participant_name=participant_name, next_ddl=id_drop_down_list),
         )
-        participants_drop_down_list.set("--Name--")
-        participants_drop_down_list.bind("<<ComboboxSelected>>",
-                                         lambda event: self.load_participant_button_bind_function(event,
-                                                                                                  id_drop_down_list))
+        participants_drop_down_list.config(
+            width=20
+        )
         participants_drop_down_list.pack(
             side="top",
             padx=5,
@@ -1153,15 +1150,15 @@ class Application(tk.Frame):
         # endregion PARTICIPANT
 
         # region ID DDL
-        id_drop_down_list = ttk.Combobox(
-            self.popup,
-            width=20,
+        id_drop_down_list = tk.OptionMenu( #HERE
+            self.ddls_frame,
+            self.PARTICIPANT_ID,
+            "You shouldn't be able to see that"
         )
-        id_drop_down_list.set("--ID--")
         id_drop_down_list.config(
-            state="disabled",
+            width=20,
+            state="disabled"
         )
-        id_drop_down_list.bind("<<ComboboxSelected>>", self.load_id_button_bind_function)
         id_drop_down_list.pack(
             side="top",
             padx=5,
@@ -1174,11 +1171,12 @@ class Application(tk.Frame):
             self.popup,
         )
         footer.pack()
-        load_participant_button = tk.Button(
+        self.load_participant_button = tk.Button(
             footer,
             command=self.load_participant_confirm,
             fg="green",
-            text="Confirm"
+            text="Confirm",
+            state="disabled"
         )
         cancel_button = tk.Button(
             footer,
@@ -1190,7 +1188,7 @@ class Application(tk.Frame):
         cancel_button.pack(
             side="right"
         )
-        load_participant_button.pack(
+        self.load_participant_button.pack(
             side="right"
         )
         # endregion FOOTER
@@ -1215,11 +1213,12 @@ class Application(tk.Frame):
         # HACK instead of having to deal with putting the combobox in grid, I have made 2 more Frames to mimic a grid system
         # ==========================
         # ===== BODY PARTS DDL =====
-        self.body_part_drop_down_list = ttk.Combobox(
+        self.body_part_drop_down_list = tk.OptionMenu( #HERE
             body,
-            values=TRACKS
+            self.BODY_PART,
+            *TRACKS,
+            command=self.body_part_drop_down_list_bind_function
         )
-        self.body_part_drop_down_list.set(" --body parts--")
         self.body_part_drop_down_list.config(
             state="disabled",
         )
@@ -1227,7 +1226,6 @@ class Application(tk.Frame):
             side="top",
             fill="x"
         )
-        self.body_part_drop_down_list.bind("<<ComboboxSelected>>", self.body_part_drop_down_list_bind_function)
         # =============================================
         self.build_signal_curves_panel(body)
         self.build_histogram_and_details_panel(body)
@@ -1530,7 +1528,7 @@ class Application(tk.Frame):
         self.acceleration_radiobutton = tk.Radiobutton(
             frame,
             text="Acceleration",
-            variable=self.choice,
+            variable=self.rodiobutton_choice,
             value="acceleration",
             command=self.radiobutton_function,
             justify="left",
@@ -1544,7 +1542,7 @@ class Application(tk.Frame):
         self.velocity_radiobutton = tk.Radiobutton(
             frame,
             text="Velocity",
-            variable=self.choice,
+            variable=self.rodiobutton_choice,
             value="velocity",
             command=self.radiobutton_function,
             justify="left",
@@ -1580,9 +1578,9 @@ class Application(tk.Frame):
         self.participant_name_label.pack(
             side="left"
         )
-        if self.PARTICIPANT_NAME:
+        if self.PARTICIPANT_NAME.get() != "--Name--":
             self.participant_name_label.config(
-                text=self.PARTICIPANT_NAME
+                text=self.PARTICIPANT_NAME.get()
             )
         else:
             self.participant_name_label.config(

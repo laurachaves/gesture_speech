@@ -97,3 +97,4 @@ LANDMARKER = vision.PoseLandmarker.create_from_options(_options)
 # Misc
 # =============================================================================
 THIS_YEAR = date.today().year
+BACKGROUND = "darkgray"
