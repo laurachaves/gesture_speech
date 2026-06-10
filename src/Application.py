@@ -41,7 +41,7 @@ class Application(tk.Frame):
             # noinspection PyTypeChecker
             self.after(500, self.build_popup_info)
 
-    def _init_state(self): #HERE
+    def _init_state(self):
         self.PARTICIPANT_NAME: tk.StringVar = tk.StringVar(value="--Name--")
         self.PARTICIPANT_ID: tk.StringVar = tk.StringVar(value="--ID--")
         self.BODY_PART: tk.StringVar = tk.StringVar(value="--Body Part--")
@@ -125,7 +125,6 @@ class Application(tk.Frame):
             ).pack()
 
             self.after(2000, self.popup.destroy)
-
 
     def update_startup_info(self):
         self.settings["stop_displaying_help_at_beginning"] = self.boolvar.get()
@@ -337,6 +336,12 @@ class Application(tk.Frame):
     # endregion SYSTEM
 
     # region SETTERS
+    def set_data_path_participant(self):
+        self.DATA_PATH_PARTICIPANT = os.path.join(DATA_PATH, self.PARTICIPANT_NAME.get())
+
+    def set_data_path_id(self):
+        self.DATA_PATH_ID = os.path.join(self.DATA_PATH_PARTICIPANT, self.PARTICIPANT_ID.get())
+
     def set_infos_labels(self, name: str = " - ", video_year: str = " - "):
         """
         Set the Labels text in the information section.
@@ -686,6 +691,9 @@ class Application(tk.Frame):
         if self.name_entry.get() and (
                 self.video_path_entry.get() and os.path.exists(self.video_path_entry.get())) and (
                 self.video_year_entry.get() and len(self.video_year_entry.get()) == 4):
+            self.master.config(cursor="wait")
+            self.popup.config(cursor="wait")
+            self.master.update_idletasks()
             self.popup_status_label.config(
                 relief="groove",
                 bg="#fdf1b8",
@@ -706,6 +714,8 @@ class Application(tk.Frame):
 
             self.create_participant_tree(self.name_entry.get(),
                                          self.video_path_entry.get(), int(self.video_year_entry.get()))
+            self.master.config(cursor="")
+            self.popup.config(cursor="")
             self.popup.destroy()
         else:
             if not os.path.exists(self.video_path_entry.get()):
@@ -743,7 +753,9 @@ class Application(tk.Frame):
         print("video_year :", video_year)
 
         self.PARTICIPANT_NAME.set(name)
-        self.DATA_PATH_PARTICIPANT = DATA_PATH + self.PARTICIPANT_NAME.get() + "/"
+
+        self.set_data_path_participant()
+
         if not os.path.exists(self.DATA_PATH_PARTICIPANT):
             os.mkdir(self.DATA_PATH_PARTICIPANT)
         self.load_participant_name_context()
@@ -751,7 +763,10 @@ class Application(tk.Frame):
         self.advance_progress_bar(parent=self.popup_footer, progression_bar=self.popup_progression_bar)
 
         self.VIDEO_YEAR = video_year
-        self.VIDEO_YEAR_ID = self.get_next_video_year_id(video_year)
+        self.VIDEO_YEAR_ID = self.get_next_video_year_id(self.VIDEO_YEAR)
+
+        self.PARTICIPANT_ID.set(str(self.VIDEO_YEAR) + "-" + str(self.VIDEO_YEAR_ID))
+
         self.load_participant_id_context()
         os.mkdir(self.DATA_PATH_ID)
         print("- Set of the year ID")
@@ -773,8 +788,8 @@ class Application(tk.Frame):
 
         self.set_infos_labels(name=name, video_year=str(video_year))
 
-        f0_extract("data/meteoaudio.mp3", self.DATA_PATH_ID + "f0.csv")  # TODO change the hardcoded path with the audio from the ID folder once it'll be extracted
-        plot_pitch("data/meteoaudio.mp3", self.DATA_PATH_ID)  # TODO change the hardcoded path with the audio from the ID folder once it'll be extracted
+        f0_extract("data/meteoaudio.mp3", os.path.join(self.DATA_PATH_ID, "f0.csv"))
+        plot_pitch("data/meteoaudio.mp3", self.DATA_PATH_ID)
 
         print("- Making histograms")
         self.set_parameters_to_default()
@@ -798,7 +813,8 @@ class Application(tk.Frame):
     def load_participant_name_context(self):
         self.reset()
 
-        self.DATA_PATH_PARTICIPANT = DATA_PATH + self.PARTICIPANT_NAME.get() + "/"
+
+        self.set_data_path_participant()
         self.set_infos_labels(name=self.PARTICIPANT_NAME.get())
 
 
@@ -808,7 +824,7 @@ class Application(tk.Frame):
 
     def load_participant_id_context(self):
         self.reset_images()
-        self.DATA_PATH_ID = self.DATA_PATH_PARTICIPANT + self.PARTICIPANT_ID.get() + "/"
+        self.set_data_path_id()
         self.set_infos_labels(name=self.PARTICIPANT_NAME.get(), video_year=str(self.VIDEO_YEAR))
 
         self.body_part_drop_down_list.config(
@@ -1133,7 +1149,7 @@ class Application(tk.Frame):
         self.ddls_frame.pack()
         # region PARTICIPANT
         participants = sorted(os.listdir("data/participants/"))
-        participants_drop_down_list = tk.OptionMenu( #HERE
+        participants_drop_down_list = tk.OptionMenu(
             self.ddls_frame,
             self.PARTICIPANT_NAME,
             *participants,
@@ -1150,7 +1166,7 @@ class Application(tk.Frame):
         # endregion PARTICIPANT
 
         # region ID DDL
-        id_drop_down_list = tk.OptionMenu( #HERE
+        id_drop_down_list = tk.OptionMenu(
             self.ddls_frame,
             self.PARTICIPANT_ID,
             "You shouldn't be able to see that"
@@ -1213,7 +1229,7 @@ class Application(tk.Frame):
         # HACK instead of having to deal with putting the combobox in grid, I have made 2 more Frames to mimic a grid system
         # ==========================
         # ===== BODY PARTS DDL =====
-        self.body_part_drop_down_list = tk.OptionMenu( #HERE
+        self.body_part_drop_down_list = tk.OptionMenu(
             body,
             self.BODY_PART,
             *TRACKS,
@@ -1265,7 +1281,7 @@ class Application(tk.Frame):
 
         toolbar.add_command(
             label="Help",
-            command=self.build_popup_info
+            command=self.build_popup_info,
         )
 
         window.config(menu=toolbar)
