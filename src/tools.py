@@ -175,6 +175,7 @@ def plot_velocity_acc(csv_path, landmarks, output_path, peak=False, fps=None, th
                 plt.title(f"Evolution of {metric} of {lm} throughout the video")
                 plt.legend()
                 plt.savefig(os.path.join(output_path, f"{metric}_{lm}.png"))
+                plt.close()
 
     else:
         for lm in landmarks:
@@ -185,12 +186,13 @@ def plot_velocity_acc(csv_path, landmarks, output_path, peak=False, fps=None, th
             movement = [float(row[mov_col]) for row in rows]
             acceleration = [float(row[accel_col]) for row in rows]
 
-            plt.figure(figsize=(15, 8))
+            plt.figure()
             plt.plot(frames, movement)
             plt.xlabel("Frame")
             plt.ylabel(f"Velocity of {lm}")
             plt.title(f"Evolution of velocity of {lm} throughout the video")
             plt.savefig(os.path.join(output_path, f"velocity_{lm}.png"))
+            plt.close()
 
 
             plt.figure()
@@ -199,6 +201,7 @@ def plot_velocity_acc(csv_path, landmarks, output_path, peak=False, fps=None, th
             plt.ylabel("Acceleration")
             plt.title(f"Evolution of acceleration of {lm} throughout the video")
             plt.savefig(os.path.join(output_path, f"acceleration_{lm}.png"))
+            plt.close()
 
 
 
@@ -227,23 +230,25 @@ def plot_pitch(audio_path, output_path, time_step=0.00333, pitch_floor=100.0, pi
         voiced_f0 = f0[f0 > 0]
         threshold = np.percentile(voiced_f0, threshold_percentile)
         peaks, _ = find_peaks(f0, height=threshold, distance=peak_distance)
-        plt.figure(figsize=(15, 8))
+        plt.figure()
         plt.plot(time_pitch, f0_plot, label="Pitch (F0)")
         plt.scatter(time_pitch[peaks], f0[peaks], color="red", zorder=5,
                     label=f"Peaks (≥ p{threshold_percentile}, dist={peak_distance})")
         plt.xlabel("Time (s)")
         plt.ylabel("Frequency (Hz)")
-        plt.title(f"Evolution of pitch throughout the audio: {audio_path.split('/')[-1]}")
+        plt.title(f"Evolution of pitch throughout the audio")
         plt.legend()
         plt.savefig(os.path.join(output_path, "f0.png"))
+        plt.close()
 
     else:
         plt.figure()
         plt.plot(time_pitch, f0_plot)
         plt.xlabel("Time (s)")
         plt.ylabel("Frequency (Hz)")
-        plt.title(f"Evolution of pitch throughout the audio: {audio_path.split('/')[-1]}")
+        plt.title(f"Evolution of pitch throughout the audio")
         plt.savefig(os.path.join(output_path, "f0.png"))
+        plt.close()
 
 
 
@@ -319,6 +324,7 @@ def histo(csv_path, landmarks, f0_path, fps, output_path, threshold_percentile=7
                 ax.legend()
                 plt.tight_layout()
                 plt.savefig(os.path.join(output_path, f"histogram_acceleration_{lm_name}.png"))
+                plt.close()
 
                 all_acceleration.append(np.array(movement_all[f'acceleration_{lm_name}']))
             mean_acceleration = np.mean(all_acceleration, axis=0)
@@ -339,6 +345,7 @@ def histo(csv_path, landmarks, f0_path, fps, output_path, threshold_percentile=7
             ax.legend()
             plt.tight_layout()
             plt.savefig(os.path.join(output_path, "histogram_acceleration_average.png"))
+            plt.close()
 
 
         if metric == 'velocity':
@@ -363,6 +370,7 @@ def histo(csv_path, landmarks, f0_path, fps, output_path, threshold_percentile=7
                 ax.legend()
                 plt.tight_layout()
                 plt.savefig(os.path.join(output_path, f"histogram_velocity_{lm_name}.png"))
+                plt.close()
 
                 all_velocity.append(np.array(movement_all[f'movement_{lm_name}']))
             mean_velocity = np.mean(all_velocity, axis=0)
@@ -383,6 +391,7 @@ def histo(csv_path, landmarks, f0_path, fps, output_path, threshold_percentile=7
             ax.legend()
             plt.tight_layout()
             plt.savefig(os.path.join(output_path, "histogram_velocity_average.png"))
+            plt.close()
 
 
 
@@ -431,7 +440,7 @@ def plot_with_peaks(csv_path=None, landmarks=None, audio_path=None,
                 threshold = np.percentile(signal, threshold_percentile)
                 peaks, _ = find_peaks(signal, height=threshold, distance=peak_distance)
 
-                plt.figure(figsize=(15, 8))
+                plt.figure()
                 plt.plot(time, signal, label=metric.capitalize())
                 plt.scatter(time[peaks], signal[peaks], color="red", zorder=5,
                             label=f"Peaks (≥ p{threshold_percentile}, dist={peak_distance})")
@@ -452,13 +461,13 @@ def plot_with_peaks(csv_path=None, landmarks=None, audio_path=None,
         threshold = np.percentile(voiced_f0, threshold_percentile)
         peaks, _ = find_peaks(f0, height=threshold, distance=peak_distance)
 
-        plt.figure(figsize=(15, 8))
+        plt.figure()
         plt.plot(time_pitch, f0_plot, label="Pitch (F0)")
         plt.scatter(time_pitch[peaks], f0[peaks], color="red", zorder=5,
                     label=f"Peaks (≥ p{threshold_percentile}, dist={peak_distance})")
         plt.xlabel("Time (s)")
         plt.ylabel("Frequency (Hz)")
-        plt.title(f"Evolution of pitch throughout the audio: {audio_path.split('/')[-1]}")
+        plt.title(f"Evolution of pitch throughout the audio")
         plt.legend()
 
 
@@ -511,7 +520,7 @@ def smoothed_curves(csv_path, landmarks, f0_path, fps, output_path, threshold_pe
             t_pitch = nearest_event(t_vel, peak_pitch_times)
             D_vel.append(t_vel - t_pitch)
         D_vel = np.array(D_vel) * 1000
-        fig, ax = plt.subplots(figsize=(8,4))
+        fig, ax = plt.subplots()
         sns.kdeplot(D_vel, ax=ax, color = 'orange', label=f"peak velocity ({lm_name})")
         sns.kdeplot(D_acc, ax=ax, color = 'green', label=f"peak acceleration ({lm_name})")
         ax.axvline(0, linestyle="--", color="blue", label="peak pitch")
@@ -521,6 +530,7 @@ def smoothed_curves(csv_path, landmarks, f0_path, fps, output_path, threshold_pe
         ax.legend()
         plt.tight_layout()
         plt.savefig(os.path.join(output_path, f"smoothed_curves_{lm_name}.png"))
+        plt.close()
 
 
 
