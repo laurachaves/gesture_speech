@@ -112,7 +112,6 @@ class Application(tk.Frame):
         if os.listdir(DATA_PATH):
             self.build_load_participant_popup()
         else:
-            #TODO toast
             self.popup = tk.Toplevel(self.master)
             self.popup.lift()
             self.popup.attributes("-topmost", True)
@@ -166,7 +165,6 @@ class Application(tk.Frame):
         :param canva: Canva where the image will be displayed
         :param draw_line: Ask if a line synced with the video player should be drawn
         """
-        print("image_path :", image_path)
 
         frame.update_idletasks()
         canva.delete("all")
@@ -243,12 +241,16 @@ class Application(tk.Frame):
         parent.update_idletasks()
 
     def reload_images(self):
+        print("path movement :", os.path.join(self.DATA_PATH_ID, self.IMAGE_NAME[0]))
+        print("path histogram :", os.path.join(self.DATA_PATH_ID, self.IMAGE_NAME[1]))
+        print("path f0 :", os.path.join(self.DATA_PATH_ID, self.IMAGE_NAME[2]))
+
         self.draw_image(os.path.join(self.DATA_PATH_ID, self.IMAGE_NAME[0]), self.body_part_canva_frame,
-                        self.body_part_canva, False) # TODO put back True after the # TEST
+                        self.body_part_canva, True)
         self.draw_image(os.path.join(self.DATA_PATH_ID, self.IMAGE_NAME[1]), self.histogram_canvas_frame,
                         self.histogram_canvas)
         self.draw_image(os.path.join(self.DATA_PATH_ID, self.IMAGE_NAME[2]), self.f0_canva_frame,
-                        self.f0_canva, True)  # TODO set True in the arguments when the right image will be used
+                        self.f0_canva, True)
 
     def search_curves_border(self, orientation: str, image: Image.Image, width: int, height: int):
         hypothetical_lines: list[int] = []
@@ -605,7 +607,7 @@ class Application(tk.Frame):
     # endregion COMMAND CALLBACKS
 
     # region BIND FUNCTIONS CALLBACKS
-    def participants_drop_down_list_bind_function(self, participant_name, next_ddl: tk.OptionMenu):
+    def participants_drop_down_list_bind_function(self, participant_name):
         self.load_participant_name_context()
 
         values = sorted(
@@ -616,18 +618,18 @@ class Application(tk.Frame):
             key=split_id
         )
 
-        next_ddl.destroy()
+        self.next_ddl.destroy()
 
-        next_ddl = tk.OptionMenu(
+        self.next_ddl = tk.OptionMenu(
             self.ddls_frame,
             self.PARTICIPANT_ID,
             *values,
             command=self.id_drop_down_list_bind_function
         )
-        next_ddl.config(
+        self.next_ddl.config(
             width=20,
         )
-        next_ddl.pack(
+        self.next_ddl.pack(
             side="top",
             padx=5,
             pady=5,
@@ -1156,24 +1158,6 @@ class Application(tk.Frame):
             self.popup
         )
         self.ddls_frame.pack()
-        # region PARTICIPANT
-        participants = sorted(os.listdir("data/participants/"))
-        participants_drop_down_list = tk.OptionMenu(
-            self.ddls_frame,
-            self.PARTICIPANT_NAME,
-            *participants,
-            command=lambda participant_name: self.participants_drop_down_list_bind_function(participant_name=participant_name, next_ddl=id_drop_down_list),
-        )
-        participants_drop_down_list.config(
-            width=20
-        )
-        participants_drop_down_list.pack(
-            side="top",
-            padx=5,
-            pady=5,
-        )
-        # endregion PARTICIPANT
-
         # region ID DDL
         id_drop_down_list = tk.OptionMenu(
             self.ddls_frame,
@@ -1185,11 +1169,32 @@ class Application(tk.Frame):
             state="disabled"
         )
         id_drop_down_list.pack(
-            side="top",
+            side="bottom",
             padx=5,
             pady=5,
         )
         # endregion ID DDL
+
+        # region PARTICIPANT
+        participants = sorted(os.listdir("data/participants/"))
+        self.next_ddl = id_drop_down_list
+        participants_drop_down_list = tk.OptionMenu(
+            self.ddls_frame,
+            self.PARTICIPANT_NAME,
+            *participants,
+            command=lambda participant_name: self.participants_drop_down_list_bind_function(participant_name=participant_name),
+        )
+        participants_drop_down_list.config(
+            width=20
+        )
+        participants_drop_down_list.pack(
+            side="top",
+            padx=5,
+            pady=5,
+        )
+        # endregion PARTICIPANT
+
+
 
         # region FOOTER
         footer = tk.Frame(
