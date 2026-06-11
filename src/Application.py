@@ -793,7 +793,7 @@ class Application(tk.Frame):
         self.set_infos_labels(name=name, video_year=str(video_year))
 
         f0_extract("data/meteoaudio.mp3", os.path.join(self.DATA_PATH_ID, "f0.csv"))
-        plot_pitch("data/meteoaudio.mp3", self.DATA_PATH_ID)
+        plot_pitch(os.path.join(self.DATA_PATH_ID, "f0.csv"), self.DATA_PATH_ID)
 
         print("- Making histograms")
         self.set_parameters_to_default()

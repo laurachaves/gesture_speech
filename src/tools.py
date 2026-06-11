@@ -208,8 +208,7 @@ def plot_velocity_acc(csv_path, landmarks, output_path, peak=False, fps=None, th
 
 
 
-def plot_pitch(audio_path, output_path, time_step=0.00333, pitch_floor=100.0, pitch_ceiling=500.0,
-               peak=False, threshold_percentile=75, threshold_distance=75, peak_distance=5):
+def plot_pitch(csv_path, output_path, peak=False, threshold_percentile=75, peak_distance=5):
     """
     Plots the pitch (F0) contour of an audio file.
 
@@ -223,10 +222,9 @@ def plot_pitch(audio_path, output_path, time_step=0.00333, pitch_floor=100.0, pi
         threshold_percentile: Percentile threshold for peak detection
         peak_distance: Minimum distance between peaks
     """
-    snd = parselmouth.Sound(audio_path)
-    pitch = snd.to_pitch(time_step, pitch_floor, pitch_ceiling)
-    f0 = pitch.selected_array['frequency']
-    time_pitch = pitch.xs()
+    data = pd.read_csv(csv_path)
+    f0 = data["f0"].to_numpy()
+    time_pitch = data["time_pitch"].to_numpy()
     f0_plot = np.where(f0 == 0, np.nan, f0)
 
     if peak:
