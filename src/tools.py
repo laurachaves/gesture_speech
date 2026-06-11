@@ -32,7 +32,7 @@ def extract_landmarks(results, tracks_numbers):
     return row
 
 
-def movement_extraction(video_path, landmarks, landmarker, outputs_destination, make_frames=False, keypoints=None):
+def movement_extraction(video_path, landmarks, landmarker, tracks_numbers, outputs_destination, make_frames=False):
     """
     The code receives the video as an input and creates the csv files with the movements and creates the images of the frames with each landmark extracted
 
@@ -47,11 +47,10 @@ def movement_extraction(video_path, landmarks, landmarker, outputs_destination, 
     Returns:
         Doesn't return anything, just creates files
     """
+    landmarks_local = landmarks.copy()
+    if landmarks[-1] == "AVERAGE":
+        landmarks_local.pop()
     Path(outputs_destination).mkdir(parents=True, exist_ok=True)
-    if keypoints is None:
-        raise ValueError("Must set keypoints")
-    keypoints_inverted = {v: k for k, v in keypoints.items()}
-    tracks_numbers = [keypoints_inverted[landmark] for landmark in landmarks]
     outputs = []
     if isinstance(video_path, str):
         video_path = [video_path]
@@ -88,7 +87,7 @@ def movement_extraction(video_path, landmarks, landmarker, outputs_destination, 
         with open(output, 'w', newline='') as f:
             writer = csv.writer(f)
             header = []
-            for name in landmarks:
+            for name in landmarks_local:
                 header.extend([f"{name}_x", f"{name}_y", f"{name}_z"])
             writer.writerow(header)
             for row in csv_data:
@@ -98,7 +97,7 @@ def movement_extraction(video_path, landmarks, landmarker, outputs_destination, 
         all_movement = {}
         all_accel = {}
 
-        for lm_idx, lm_name in enumerate(landmarks):
+        for lm_idx, lm_name in enumerate(landmarks_local):
             movement = [0.0]
             acceleration = [0.0]
             col = lm_idx * 3
@@ -121,13 +120,17 @@ def movement_extraction(video_path, landmarks, landmarker, outputs_destination, 
         with open(movement_csv, 'w', newline='') as f:
             writer = csv.writer(f)
             movement_header = ['frame']
-            for lm_name in landmarks:
+            for lm_name in landmarks_local:
                 movement_header.extend([f'movement_{lm_name}', f'acceleration_{lm_name}'])
+            movement_header.extend(['movement_AVERAGE', 'acceleration_AVERAGE'])
             writer.writerow(movement_header)
             for i in range(len(csv_data)):
                 row = [i]
-                for lm_name in landmarks:
+                for lm_name in landmarks_local:
                     row.extend([all_movement[lm_name][i], all_accel[lm_name][i]])
+                avg_movement = sum(all_movement[lm][i] for lm in landmarks_local) / len(landmarks)
+                avg_accel    = sum(all_accel[lm][i]    for lm in landmarks_local) / len(landmarks)
+                row.extend([avg_movement, avg_accel])
                 writer.writerow(row)
 
 
@@ -160,8 +163,8 @@ def plot_velocity_acc(csv_path, landmarks, output_path, peak=False, fps=None, th
         time = np.array([i * dt for i in range(len(movement_all))])
         for lm in landmarks:
             for metric, col_name, ylabel in [
-                ("velocity", f"movement_{lm}", f"Velocity of {lm}"),
-                ("acceleration", f"acceleration_{lm}", f"Acceleration of {lm}"),
+                ("velocity", f"movement_{lm}", f"Velocity {lm}"),
+                ("acceleration", f"acceleration_{lm}", f"Acceleration {lm}"),
             ]:
                 signal = np.array(movement_all[col_name])
                 threshold = np.percentile(signal, threshold_percentile)
@@ -172,7 +175,7 @@ def plot_velocity_acc(csv_path, landmarks, output_path, peak=False, fps=None, th
                             label=f"Peaks (≥ p{threshold_percentile}, dist{peak_distance})")
                 plt.xlabel("Time (s)")
                 plt.ylabel(ylabel)
-                plt.title(f"Evolution of {metric} of {lm} throughout the video")
+                plt.title(f"Evolution of {metric} {lm} throughout the video")
                 plt.legend()
                 plt.savefig(os.path.join(output_path, f"{metric}_{lm}.png"))
                 plt.close()
@@ -189,8 +192,8 @@ def plot_velocity_acc(csv_path, landmarks, output_path, peak=False, fps=None, th
             plt.figure()
             plt.plot(frames, movement)
             plt.xlabel("Frame")
-            plt.ylabel(f"Velocity of {lm}")
-            plt.title(f"Evolution of velocity of {lm} throughout the video")
+            plt.ylabel(f"Velocity {lm}")
+            plt.title(f"Evolution of velocity {lm} throughout the video")
             plt.savefig(os.path.join(output_path, f"velocity_{lm}.png"))
             plt.close()
 
@@ -199,7 +202,7 @@ def plot_velocity_acc(csv_path, landmarks, output_path, peak=False, fps=None, th
             plt.plot(frames, acceleration)
             plt.xlabel("Frame")
             plt.ylabel("Acceleration")
-            plt.title(f"Evolution of acceleration of {lm} throughout the video")
+            plt.title(f"Evolution of acceleration {lm} throughout the video")
             plt.savefig(os.path.join(output_path, f"acceleration_{lm}.png"))
             plt.close()
 
@@ -303,7 +306,6 @@ def histo(csv_path, landmarks, f0_path, fps, output_path, threshold_percentile=7
 
     for metric in ['acceleration', 'velocity']:
         if metric == 'acceleration':
-            all_acceleration = []
             for lm_name in landmarks:
                 acceleration_lm = movement_all[f'acceleration_{lm_name}']
                 acceleration = np.array(acceleration_lm)
@@ -326,30 +328,8 @@ def histo(csv_path, landmarks, f0_path, fps, output_path, threshold_percentile=7
                 plt.savefig(os.path.join(output_path, f"histogram_acceleration_{lm_name}.png"))
                 plt.close()
 
-                all_acceleration.append(np.array(movement_all[f'acceleration_{lm_name}']))
-            mean_acceleration = np.mean(all_acceleration, axis=0)
-            acc_threshold = np.percentile(mean_acceleration, 75)
-            peaks_acc, _ = find_peaks(mean_acceleration, height=acc_threshold, distance=peak_distance)
-            peak_acc_times = time[peaks_acc]
-            D_acc = []
-            for t_acc in peak_acc_times:
-                t_pitch = peak_pitch_times[np.argmin(np.abs(peak_pitch_times - t_acc))]
-                D_acc.append(t_acc - t_pitch)
-            D_acc = np.array(D_acc) * 1000
-            fig, ax = plt.subplots()
-            sns.histplot(D_acc, bins=10)
-            ax.axvline(0, linestyle='--', color='blue', label='peak pitch')
-            ax.set_xlabel('D (ms)')
-            ax.set_ylabel('Count')
-            ax.set_title('Acceleration peak vs Pitch peak: AVERAGE')
-            ax.legend()
-            plt.tight_layout()
-            plt.savefig(os.path.join(output_path, "histogram_acceleration_average.png"))
-            plt.close()
-
 
         if metric == 'velocity':
-            all_velocity = []
             for lm_name in landmarks:
                 velocity_lm = movement_all[f'movement_{lm_name}']
                 velocity = np.array(velocity_lm)
@@ -371,27 +351,6 @@ def histo(csv_path, landmarks, f0_path, fps, output_path, threshold_percentile=7
                 plt.tight_layout()
                 plt.savefig(os.path.join(output_path, f"histogram_velocity_{lm_name}.png"))
                 plt.close()
-
-                all_velocity.append(np.array(movement_all[f'movement_{lm_name}']))
-            mean_velocity = np.mean(all_velocity, axis=0)
-            vel_threshold = np.percentile(mean_velocity, 75)
-            peaks_vel, _ = find_peaks(mean_velocity, height=vel_threshold, distance=peak_distance)
-            peak_vel_times = time[peaks_vel]
-            D_vel = []
-            for t_vel in peak_vel_times:
-                t_pitch = peak_pitch_times[np.argmin(np.abs(peak_pitch_times - t_vel))]
-                D_vel.append(t_vel - t_pitch)
-            D_vel = np.array(D_vel) * 1000
-            fig, ax = plt.subplots()
-            sns.histplot(D_vel, bins=10)
-            ax.axvline(0, linestyle='--', color='blue', label='peak pitch')
-            ax.set_xlabel('D (ms)')
-            ax.set_ylabel('Count')
-            ax.set_title('Velocity peak vs Pitch peak: AVERAGE')
-            ax.legend()
-            plt.tight_layout()
-            plt.savefig(os.path.join(output_path, "histogram_velocity_average.png"))
-            plt.close()
 
 
 

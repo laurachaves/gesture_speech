@@ -9,7 +9,7 @@ from tkinter import ttk, filedialog
 import vlc
 from PIL import Image, ImageTk, ImageOps
 
-from src.constants import TRACKS, DATA_PATH, LANDMARKER, KEYPOINTS, BACKGROUND
+from src.constants import TRACKS, DATA_PATH, LANDMARKER, TRACKS_NUMBERS, BACKGROUND
 from src.tools import histo, plot_velocity_acc, movement_extraction, f0_extract, plot_pitch
 from src.utils import millisecond_to_minute_second, split_id
 
@@ -783,7 +783,7 @@ class Application(tk.Frame):
         self.advance_progress_bar(parent=self.popup_footer, progression_bar=self.popup_progression_bar)
         self.set_infos_labels(name=name, video_year=str(video_year))
 
-        movement_extraction(video_path, TRACKS, LANDMARKER, self.DATA_PATH_ID, False, KEYPOINTS)
+        movement_extraction(video_path, TRACKS, LANDMARKER, TRACKS_NUMBERS, self.DATA_PATH_ID, False)
         print("- Getting the csvs from the video")
         self.advance_progress_bar(parent=self.popup_footer, progression_bar=self.popup_progression_bar)
         self.set_infos_labels(name=name, video_year=str(video_year))
@@ -842,7 +842,7 @@ class Application(tk.Frame):
          - Configure the time slider
          - Update the f0 frequency Label with the video FPS
         """
-        if self.vlc_instance:
+        if self.vlc_player:
             media = self.vlc_instance.media_new(os.path.join(self.DATA_PATH_ID, "video.mp4"))
             self.vlc_player.set_media(media)
 

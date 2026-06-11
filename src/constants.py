@@ -28,7 +28,7 @@ TRACKS = [
     "LEFT_SHOULDER", "RIGHT_SHOULDER",
     "LEFT_ELBOW",    "RIGHT_ELBOW",
     "LEFT_WRIST",    "RIGHT_WRIST",
-    "LEFT_INDEX",    "RIGHT_INDEX",
+    "LEFT_INDEX",    "RIGHT_INDEX", "AVERAGE"
 ]
 
 KEYPOINTS = {
@@ -67,8 +67,9 @@ KEYPOINTS = {
     32: 'RIGHT_FOOT_INDEX',
 }
 
-KEYPOINTS_INVERTED = {v: k for k, v in KEYPOINTS.items()}
-TRACKS_NUMBERS     = [KEYPOINTS_INVERTED[track] for track in TRACKS]
+#KEYPOINTS_INVERTED = {v: k for k, v in KEYPOINTS.items()}
+#TRACKS_NUMBERS     = [KEYPOINTS_INVERTED[track] for track in TRACKS]
+TRACKS_NUMBERS = [0, 11, 12, 13, 14, 15, 16, 19, 20]
 
 # =============================================================================
 # Peak detection parameters
