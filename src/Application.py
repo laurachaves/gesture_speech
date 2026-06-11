@@ -5,6 +5,7 @@ import tkinter as tk
 import webbrowser
 from datetime import datetime
 from tkinter import ttk, filedialog
+from audio_extract import extract_audio
 
 import vlc
 from PIL import Image, ImageTk, ImageOps
@@ -939,9 +940,10 @@ class Application(tk.Frame):
         self.set_infos_labels(name=name, video_year=str(video_year))
 
         # TODO extract the audio from the video to DATA_PATH_ID
-        f0_extract("data/meteoaudio.mp3", os.path.join(self.DATA_PATH_ID, "f0.csv"))
+        extract_audio(input_path=video_path, output_path=os.path.join(self.DATA_PATH_ID, "audiofile.mp3"))
+        f0_extract(os.path.join(self.DATA_PATH_ID, "audiofile.mp3"), os.path.join(self.DATA_PATH_ID, "f0.csv"))
         plot_pitch(os.path.join(self.DATA_PATH_ID, "f0.csv"), self.DATA_PATH_ID)
-
+        
         print("- Making histograms")
         self.set_parameters_to_default()
 
