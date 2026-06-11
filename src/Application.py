@@ -70,6 +70,7 @@ class Application(tk.Frame):
 
         self.boolvar: tk.BooleanVar = tk.BooleanVar(value=self.settings["stop_displaying_help_at_beginning"])
         self.rodiobutton_choice: tk.StringVar = tk.StringVar(value="acceleration")
+        self.remove_mode: tk.StringVar = tk.StringVar(value="participant")
 
         self.old_peak_percentage: int
         self.old_peak_distance: int
@@ -120,6 +121,25 @@ class Application(tk.Frame):
             tk.Label(
                 self.popup,
                 text="No participant found. Please create a participant first.",
+                justify="left",
+                padx=5,
+                pady=5
+            ).pack()
+
+            self.after(2000, self.popup.destroy)
+
+    def call_remove_participant_popup(self):
+        if os.listdir(DATA_PATH):
+            self.build_remove_participant_popup()
+        else:
+            self.popup = tk.Toplevel(self.master)
+            self.popup.lift()
+            self.popup.attributes("-topmost", True)
+            self.popup.attributes("-topmost", False)
+
+            tk.Label(
+                self.popup,
+                text="No participant found. Nothing to remove.",
                 justify="left",
                 padx=5,
                 pady=5
@@ -560,6 +580,9 @@ class Application(tk.Frame):
     # endregion VIDEO CONTROLS
 
     # region COMMAND CALLBACKS
+    def popup_cancel(self):
+        self.popup.destroy()
+
     def load_participant_confirm(self):
         self.set_parameters_to_default()
         self.set_infos_labels(self.PARTICIPANT_NAME.get(), str(self.VIDEO_YEAR))
@@ -581,6 +604,69 @@ class Application(tk.Frame):
         self.DATA_PATH_ID = old_values[4]
 
         self.popup.destroy()
+
+    def remove_participant_confirm(self):
+        if self.remove_mode.get() == "participant":
+            target_path = self.DATA_PATH_PARTICIPANT
+            target_name = "participant"
+        else:
+            target_path = self.DATA_PATH_ID
+            target_name = "entry"
+
+        if self.remove_confirm:
+            if os.path.isdir(target_path):
+                shutil.rmtree(target_path)
+                if self.remove_mode.get() == "entry" and os.path.isdir(self.DATA_PATH_PARTICIPANT):
+                    remaining_entries = [
+                        name for name in os.listdir(self.DATA_PATH_PARTICIPANT)
+                        if os.path.isdir(os.path.join(self.DATA_PATH_PARTICIPANT, name))
+                    ]
+                    if not remaining_entries:
+                        shutil.rmtree(self.DATA_PATH_PARTICIPANT)
+            self.popup.destroy()
+            return
+        else:
+            self.remove_confirm = True
+            self.remove_warning_label = tk.Label(
+                self.ddls_frame,
+                text=f"Are you sure you want to remove this {target_name} ?",
+                fg="black",
+                bg="red",
+                relief="raised"
+            )
+            self.remove_warning_label.pack(
+                side="bottom",
+            )
+            self.remove_participant_button.config(
+                fg="red",
+                text="Delete"
+            )
+            return
+
+    def remove_mode_radiobutton_function(self):
+        self.remove_confirm = False
+        if hasattr(self, "remove_warning_label") and self.remove_warning_label is not None:
+            self.remove_warning_label.destroy()
+            self.remove_warning_label = None
+
+        self.remove_participant_button.config(
+            fg="green",
+            text="Confirm",
+            state="disabled"
+        )
+
+        if self.remove_mode.get() == "participant":
+            self.next_ddl.pack_forget()
+            if self.remove_participant_selected:
+                self.remove_participant_button.config(state="normal")
+        else:
+            self.next_ddl.pack(
+                side="top",
+                padx=5,
+                pady=5,
+            )
+            if self.remove_id_selected:
+                self.remove_participant_button.config(state="normal")
 
     def radiobutton_function(self):
         self.set_image_name()
@@ -607,7 +693,7 @@ class Application(tk.Frame):
     # endregion COMMAND CALLBACKS
 
     # region BIND FUNCTIONS CALLBACKS
-    def participants_drop_down_list_bind_function(self, participant_name):
+    def load_participants_drop_down_list_bind_function(self, participant_name):
         self.load_participant_name_context()
 
         values = sorted(
@@ -624,7 +710,7 @@ class Application(tk.Frame):
             self.ddls_frame,
             self.PARTICIPANT_ID,
             *values,
-            command=self.id_drop_down_list_bind_function
+            command=self.load_id_drop_down_list_bind_function
         )
         self.next_ddl.config(
             width=20,
@@ -635,12 +721,73 @@ class Application(tk.Frame):
             pady=5,
         )
 
-    def id_drop_down_list_bind_function(self, participant_id):
+    def load_id_drop_down_list_bind_function(self, participant_id):
         self.VIDEO_YEAR, self.VIDEO_YEAR_ID = split_id(participant_id)
 
         self.load_participant_id_context()
 
         self.load_participant_button.config(state="normal")
+
+    def remove_participants_drop_down_list_bind_function(self, participant_name):
+        self.load_participant_name_context()
+        self.remove_confirm = False
+        self.remove_participant_selected = True
+        self.remove_id_selected = False
+        self.PARTICIPANT_ID.set("--ID--")
+        self.remove_participant_button.config(
+            fg="green",
+            text="Confirm"
+        )
+        if hasattr(self, "remove_warning_label") and self.remove_warning_label is not None:
+            self.remove_warning_label.destroy()
+            self.remove_warning_label = None
+
+        if self.remove_mode.get() == "participant":
+            self.next_ddl.pack_forget()
+            self.remove_participant_button.config(state="normal")
+            return
+
+        values = sorted(
+            [
+                name for name in os.listdir(self.DATA_PATH_PARTICIPANT)
+                if os.path.isdir(os.path.join(self.DATA_PATH_PARTICIPANT, name))
+            ],
+            key=split_id
+        )
+
+        self.next_ddl.destroy()
+
+        self.next_ddl = tk.OptionMenu(
+            self.ddls_frame,
+            self.PARTICIPANT_ID,
+            *values,
+            command=self.remove_id_drop_down_list_bind_function
+        )
+        self.next_ddl.config(
+            width=20,
+        )
+
+        self.remove_participant_button.config(state="disabled")
+        self.next_ddl.pack(
+            side="top",
+            padx=5,
+            pady=5,
+        )
+
+    def remove_id_drop_down_list_bind_function(self, participant_id):
+        self.VIDEO_YEAR, self.VIDEO_YEAR_ID = split_id(participant_id)
+        self.set_data_path_id()
+        self.remove_confirm = False
+        self.remove_id_selected = True
+        self.remove_participant_button.config(
+            fg="green",
+            text="Confirm"
+        )
+        if hasattr(self, "remove_warning_label") and self.remove_warning_label is not None:
+            self.remove_warning_label.destroy()
+            self.remove_warning_label = None
+
+        self.remove_participant_button.config(state="normal")
 
     def body_part_drop_down_list_bind_function(self, body_part):
         if self.acceleration_radiobutton["state"] == "disabled" or self.velocity_radiobutton["state"] == "disabled":
@@ -688,7 +835,6 @@ class Application(tk.Frame):
 
     # region PARTICIPANT WORKFLOW
     def validate_participant_form(self):
-        # TODO check the execution thread (name & video year not set on creation, maybe there's more)
         """
         Gets the values from the form to create the new participant's structure and set values with them
         """
@@ -742,7 +888,7 @@ class Application(tk.Frame):
                 anchor="center",
             )
 
-    def create_participant_tree(self, name: str = "name", video_path: str = "data/meteo4.mp4", video_year: int = 2026): #TODO remake that function according to the new popup
+    def create_participant_tree(self, name: str = "name", video_path: str = "data/meteo4.mp4", video_year: int = 2026):
         """
         Initialise the data for a new participant:
         - Create the participant's folders
@@ -792,6 +938,7 @@ class Application(tk.Frame):
 
         self.set_infos_labels(name=name, video_year=str(video_year))
 
+        # TODO extract the audio from the video to DATA_PATH_ID
         f0_extract("data/meteoaudio.mp3", os.path.join(self.DATA_PATH_ID, "f0.csv"))
         plot_pitch(os.path.join(self.DATA_PATH_ID, "f0.csv"), self.DATA_PATH_ID)
 
@@ -1158,6 +1305,7 @@ class Application(tk.Frame):
             self.popup
         )
         self.ddls_frame.pack()
+
         # region ID DDL
         id_drop_down_list = tk.OptionMenu(
             self.ddls_frame,
@@ -1182,7 +1330,7 @@ class Application(tk.Frame):
             self.ddls_frame,
             self.PARTICIPANT_NAME,
             *participants,
-            command=lambda participant_name: self.participants_drop_down_list_bind_function(participant_name=participant_name),
+            command=lambda participant_name: self.load_participants_drop_down_list_bind_function(participant_name=participant_name),
         )
         participants_drop_down_list.config(
             width=20
@@ -1193,8 +1341,6 @@ class Application(tk.Frame):
             pady=5,
         )
         # endregion PARTICIPANT
-
-
 
         # region FOOTER
         footer = tk.Frame(
@@ -1226,6 +1372,117 @@ class Application(tk.Frame):
         self.place_popup()
 
     # endregion BUILDING LOAD PARTICIPANT POPUPS
+
+    #region BUILDING REMOVE PARTICIPANT POPUP
+    def build_remove_participant_popup(self):
+        self.popup = tk.Toplevel(self.master)
+        self.popup.title("Remove Participant")
+        self.popup.lift()
+        self.popup.attributes("-topmost", True)
+        self.popup.attributes("-topmost", False)
+
+        self.remove_confirm: bool = False
+        self.remove_warning_label = None
+        self.remove_participant_selected = False
+        self.remove_id_selected = False
+        self.remove_mode.set("participant")
+        self.PARTICIPANT_NAME.set("--Name--")
+        self.PARTICIPANT_ID.set("--ID--")
+
+        remove_mode_frame = tk.Frame(
+            self.popup
+        )
+        remove_mode_frame.pack(
+            side="top",
+            fill="x",
+            padx=5,
+            pady=5,
+        )
+        tk.Radiobutton(
+            remove_mode_frame,
+            text="Participant",
+            variable=self.remove_mode,
+            value="participant",
+            command=self.remove_mode_radiobutton_function,
+        ).pack(
+            side="left"
+        )
+        tk.Radiobutton(
+            remove_mode_frame,
+            text="Entry",
+            variable=self.remove_mode,
+            value="entry",
+            command=self.remove_mode_radiobutton_function,
+        ).pack(
+            side="left"
+        )
+
+        self.ddls_frame = tk.Frame(
+            self.popup
+        )
+        self.ddls_frame.pack()
+
+        # region ID DDL
+        id_drop_down_list = tk.OptionMenu(
+            self.ddls_frame,
+            self.PARTICIPANT_ID,
+            "You shouldn't be able to see that"
+        )
+        id_drop_down_list.config(
+            width=20,
+            state="disabled"
+        )
+        # endregion ID DDL
+
+        # region PARTICIPANT
+        participants = sorted(os.listdir(DATA_PATH))
+        self.next_ddl = id_drop_down_list
+        participants_drop_down_list = tk.OptionMenu(
+            self.ddls_frame,
+            self.PARTICIPANT_NAME,
+            *participants,
+            command=lambda participant_name: self.remove_participants_drop_down_list_bind_function(participant_name=participant_name),
+        )
+        participants_drop_down_list.config(
+            width=20
+        )
+        participants_drop_down_list.pack(
+            side="top",
+            padx=5,
+            pady=5,
+        )
+        # endregion PARTICIPANT
+
+        # region FOOTER
+        footer = tk.Frame(
+            self.popup,
+        )
+        footer.pack()
+        self.remove_participant_button = tk.Button(
+            footer,
+            command= self.remove_participant_confirm,
+            fg="green",
+            text="Confirm",
+            state="disabled"
+        )
+        cancel_button = tk.Button(
+            footer,
+            command=lambda: self.popup_cancel(),
+            fg="red",
+            text="Cancel",
+        )
+
+        cancel_button.pack(
+            side="right"
+        )
+        self.remove_participant_button.pack(
+            side="right"
+        )
+        # endregion FOOTER
+
+        self.place_popup()
+
+    #endregion BUILDING REMOVE PARTICIPANT POPUP
 
     # endregion BUILDING POPUPS
 
@@ -1279,6 +1536,10 @@ class Application(tk.Frame):
         menu_file.add_command(
             label="Load Participant",
             command=self.call_load_participant_popup
+        )
+        menu_file.add_command(
+            label="Remove Participant",
+            command=self.call_remove_participant_popup
         )
         menu_file.add_separator()
         menu_file.add_command(
