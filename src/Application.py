@@ -842,18 +842,25 @@ class Application(tk.Frame):
          - Configure the time slider
          - Update the f0 frequency Label with the video FPS
         """
-        media = self.vlc_instance.media_new(os.path.join(self.DATA_PATH_ID, "video.mp4"))
-        self.vlc_player.set_media(media)
+        if self.vlc_instance:
+            media = self.vlc_instance.media_new(os.path.join(self.DATA_PATH_ID, "video.mp4"))
+            self.vlc_player.set_media(media)
 
-        self.master.update()
-        self.vlc_player.set_xwindow(self.video_player_frame.winfo_id())
+            self.master.update()
+            self.vlc_player.set_xwindow(self.video_player_frame.winfo_id())
 
-        self.play()
-        self.pause_at_start()
+            self.play()
+            self.pause_at_start()
 
-        self.set_time_scale_length()
-        # noinspection PyTypeChecker
-        self.after(100, self.set_f0_entry)
+            self.set_time_scale_length()
+            # noinspection PyTypeChecker
+            self.after(100, self.set_f0_entry)
+        else:
+            tk.Label(
+                self.video_player_frame,
+                text="PROBLEM",
+                fg="red"
+            ).pack()
 
     def browse_for_mp4(self):
         path: str = filedialog.askopenfilename(
